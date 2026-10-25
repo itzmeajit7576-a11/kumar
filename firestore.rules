@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'authProvider', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'authProvider', 'createdAt', 'updatedAt'])
+        && data.uid == userId
+        && data.uid is string && data.uid.size() <= 128
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 254
+        && data.authProvider in ['google', 'password', 'demo']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidHistoryRecord(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'category', 'title', 'classification', 'riskScore', 'confidence', 'timestamp'])
+        && data.keys().hasOnly(['id', 'userId', 'category', 'title', 'classification', 'riskScore', 'confidence', 'timestamp', 'summary', 'recommendedAction'])
+        && data.userId == userId
+        && data.id is string && data.id.size() <= 128
+        && data.category in ['Email', 'Message', 'Screenshot']
+        && data.title is string && data.title.size() <= 200
+        && data.classification is string && data.classification.size() <= 30
+        && data.riskScore is int && data.riskScore >= 0 && data.riskScore <= 100
+        && data.confidence is int && data.confidence >= 0 && data.confidence <= 100
+        && data.timestamp is timestamp;
+    }
+
+    function isValidReportRecord(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'inputType', 'classification', 'riskScore', 'createdAt'])
+        && data.keys().hasOnly(['id', 'userId', 'inputType', 'classification', 'riskScore', 'createdAt', 'summary', 'recommendedAction'])
+        && data.userId == userId
+        && data.id is string && data.id.size() <= 128
+        && data.inputType in ['Email Analysis', 'Scam Message Analysis', 'Screenshot Analysis', 'Incident Report']
+        && data.classification is string && data.classification.size() <= 30
+        && data.riskScore is int && data.riskScore >= 0 && data.riskScore <= 100
+        && data.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId) && incoming().createdAt == request.time;
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'updatedAt']);
+
+      match /history/{recordId} {
+        allow get: if isOwner(userId) && isValidId(recordId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(recordId) && isValidHistoryRecord(incoming(), userId) && incoming().timestamp == request.time;
+        allow delete: if isOwner(userId) && isValidId(recordId);
+      }
+
+      match /reports/{reportId} {
+        allow get: if isOwner(userId) && isValidId(reportId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isOwner(userId) && isValidId(reportId) && isValidReportRecord(incoming(), userId) && incoming().createdAt == request.time;
+        allow delete: if isOwner(userId) && isValidId(reportId);
+      }
+    }
+  }
+}

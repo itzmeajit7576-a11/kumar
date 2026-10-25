@@ -1,0 +1,130 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Authenticated CyberShield user profile and security preferences",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique user identifier matching auth.uid",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the security operator",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address",
+          "maxLength": 254
+        },
+        "authProvider": {
+          "type": "string",
+          "enum": ["google", "password", "demo"],
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        }
+      },
+      "required": ["uid", "displayName", "email", "authProvider", "createdAt"]
+    },
+    "ThreatAnalysisRecord": {
+      "title": "Threat Analysis Record",
+      "description": "Stored forensic result for an Email, Message, or Screenshot scan",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Email", "Message", "Screenshot"],
+          "maxLength": 20
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "classification": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "riskScore": {
+          "type": "integer"
+        },
+        "confidence": {
+          "type": "integer"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        }
+      },
+      "required": ["id", "userId", "category", "title", "classification", "riskScore", "confidence", "timestamp"]
+    },
+    "SecurityReportRecord": {
+      "title": "Security Report Record",
+      "description": "Formal exported or submitted security incident report",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "inputType": {
+          "type": "string",
+          "enum": ["Email Analysis", "Scam Message Analysis", "Screenshot Analysis", "Incident Report"],
+          "maxLength": 40
+        },
+        "classification": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "riskScore": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 40
+        }
+      },
+      "required": ["id", "userId", "inputType", "classification", "riskScore", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile document accessible only by the authenticated owner"
+    },
+    "/users/{userId}/history/{recordId}": {
+      "schema": { "$ref": "#/entities/ThreatAnalysisRecord" },
+      "description": "User-scoped Email, Message, and Screenshot threat analysis history"
+    },
+    "/users/{userId}/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/SecurityReportRecord" },
+      "description": "User-scoped generated and submitted security reports"
+    }
+  }
+}
