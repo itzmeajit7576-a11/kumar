@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ScreenshotAnalysisResult } from "../types/security";
 import { HolographicGauge } from "./HolographicGauge";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface ScreenshotScannerViewProps {
   onAnalysisComplete: (
@@ -153,6 +154,8 @@ export const ScreenshotScannerView: React.FC<ScreenshotScannerViewProps> = ({
   onAnalysisComplete,
   onExportReport,
 }) => {
+  const { currentTranslations, language } = useLanguage();
+  const t = currentTranslations;
   const [selectedSample, setSelectedSample] = useState<SyntheticScreenshotSample>(
     SYNTHETIC_SAMPLES[0]
   );

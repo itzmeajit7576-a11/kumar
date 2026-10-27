@@ -42,6 +42,8 @@ import { ReportsView } from "./components/ReportsView";
 import { VoiceAssistantWidget } from "./components/VoiceAssistantWidget";
 import { SettingsView } from "./components/SettingsView";
 import { HolographicGauge } from "./components/HolographicGauge";
+import { useLanguage } from "./i18n/LanguageContext";
+import { LanguageSelector } from "./components/LanguageSelector";
 
 const SIDEBAR_ITEMS: {
   id: NavPage;
@@ -96,6 +98,9 @@ const SIDEBAR_ITEMS: {
 ];
 
 export default function App() {
+  const { currentTranslations, language } = useLanguage();
+  const t = currentTranslations;
+
   const [user, setUser] = useState<UserProfile | null>(() =>
     firebaseService.getCurrentUser()
   );
@@ -108,6 +113,58 @@ export default function App() {
   const [prefillScamMessage, setPrefillScamMessage] = useState<string | undefined>(
     undefined
   );
+
+  const sidebarItems: {
+    id: NavPage;
+    label: string;
+    icon: React.ReactNode;
+  }[] = [
+    {
+      id: "dashboard",
+      label: t.nav.dashboard,
+      icon: <LayoutDashboard className="w-4 h-4" />,
+    },
+    {
+      id: "email-analyzer",
+      label: t.nav.emailAnalyzer,
+      icon: <Mail className="w-4 h-4" />,
+    },
+    {
+      id: "scam-detector",
+      label: t.nav.scamDetector,
+      icon: <MessageSquareWarning className="w-4 h-4" />,
+    },
+    {
+      id: "screenshot-scanner",
+      label: t.nav.screenshotScanner,
+      icon: <ScanLine className="w-4 h-4" />,
+    },
+    {
+      id: "history",
+      label: t.nav.threatHistory,
+      icon: <History className="w-4 h-4" />,
+    },
+    {
+      id: "reports",
+      label: t.nav.securityReports,
+      icon: <FileText className="w-4 h-4" />,
+    },
+    {
+      id: "awareness",
+      label: t.nav.scamAwareness,
+      icon: <BookOpen className="w-4 h-4" />,
+    },
+    {
+      id: "assistant",
+      label: t.nav.aiAssistant,
+      icon: <Bot className="w-4 h-4" />,
+    },
+    {
+      id: "settings",
+      label: t.nav.settings,
+      icon: <Settings className="w-4 h-4" />,
+    },
+  ];
 
   // Sync user-scoped Firestore history & reports when user authenticates
   useEffect(() => {
@@ -296,13 +353,13 @@ export default function App() {
               CyberShield
             </button>
             <div className="text-[11px] font-mono text-slate-400 mt-0.5">
-              AI Security Command Center
+              {t.common.brandSubtitle}
             </div>
           </div>
 
           {/* Primary Navigation Items */}
           <nav className="space-y-1">
-            {SIDEBAR_ITEMS.map((item) => {
+            {sidebarItems.map((item) => {
               const isActive = activePage === item.id;
               return (
                 <button
@@ -341,7 +398,7 @@ export default function App() {
             className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-red-950/30 hover:bg-red-900/40 border border-red-500/30 text-xs font-medium text-red-300 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
-            <span>Logout Session</span>
+            <span>{t.common.logout}</span>
           </button>
         </div>
       </aside>
@@ -368,11 +425,11 @@ export default function App() {
               }}
               className="text-base font-bold font-display tracking-wide text-white whitespace-nowrap"
             >
-              CyberShield Command
+              {t.common.commandCenter}
             </a>
           </div>
 
-          {/* Zone 2: 5 Clean Text Navigation Links */}
+          {/* Zone 2: Clean Text Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-400">
             <button
               type="button"
@@ -381,7 +438,7 @@ export default function App() {
                 activePage === "dashboard" ? "text-cyan-400" : ""
               }`}
             >
-              Dashboard
+              {t.nav.dashboard}
             </button>
             <button
               type="button"
@@ -390,7 +447,7 @@ export default function App() {
                 activePage === "email-analyzer" ? "text-cyan-400" : ""
               }`}
             >
-              Email Analyzer
+              {t.nav.emailAnalyzer}
             </button>
             <button
               type="button"
@@ -399,7 +456,7 @@ export default function App() {
                 activePage === "scam-detector" ? "text-cyan-400" : ""
               }`}
             >
-              Scam Detector
+              {t.nav.scamDetector}
             </button>
             <button
               type="button"
@@ -408,7 +465,7 @@ export default function App() {
                 activePage === "screenshot-scanner" ? "text-cyan-400" : ""
               }`}
             >
-              OCR Scanner
+              {t.nav.screenshotScanner}
             </button>
             <button
               type="button"
@@ -417,26 +474,31 @@ export default function App() {
                 activePage === "awareness" ? "text-cyan-400" : ""
               }`}
             >
-              Awareness
+              {t.nav.scamAwareness}
             </button>
           </nav>
 
-          {/* Zone 3: Primary Action */}
+          {/* Zone 3: Language Selector & Primary Action */}
           <div className="flex items-center gap-3">
+            <LanguageSelector />
             <button
               type="button"
               onClick={() => setActivePage("scam-detector")}
               className="px-3.5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors whitespace-nowrap cursor-pointer"
             >
-              + New Threat Scan
+              {t.common.newScan}
             </button>
           </div>
         </header>
 
         {/* Mobile Drawer Navigation */}
         {mobileNavOpen && (
-          <div className="lg:hidden bg-slate-950 border-b border-white/10 p-4 space-y-1 no-print">
-            {SIDEBAR_ITEMS.map((item) => (
+          <div className="lg:hidden bg-slate-950 border-b border-white/10 p-4 space-y-2 no-print">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 px-1">
+              <span className="text-xs text-slate-400 font-mono">{t.common.language}:</span>
+              <LanguageSelector variant="compact" />
+            </div>
+            {sidebarItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -460,7 +522,7 @@ export default function App() {
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium text-red-400"
             >
               <LogOut className="w-4 h-4" />
-              <span>Logout</span>
+              <span>{t.common.logout}</span>
             </button>
           </div>
         )}

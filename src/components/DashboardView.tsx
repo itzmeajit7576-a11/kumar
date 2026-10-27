@@ -20,6 +20,7 @@ import {
   NavPage,
   ShieldThreatState,
 } from "../types/security";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface DashboardViewProps {
   history: HistoryRecord[];
@@ -97,6 +98,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSelectRecord,
   realtimeAlertsEnabled = true,
 }) => {
+  const { currentTranslations } = useLanguage();
+  const t = currentTranslations;
+
   const [shieldOverride, setShieldOverride] = useState<ShieldThreatState | null>(null);
   const [activeAlertIndex, setActiveAlertIndex] = useState(0);
   const [feedPaused, setFeedPaused] = useState(!realtimeAlertsEnabled);

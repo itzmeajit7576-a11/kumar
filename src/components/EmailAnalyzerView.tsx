@@ -13,6 +13,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { EmailAnalysisResult } from "../types/security";
+import { useLanguage } from "../i18n/LanguageContext";
 import { HolographicGauge } from "./HolographicGauge";
 
 interface EmailAnalyzerViewProps {
@@ -88,6 +89,8 @@ export const EmailAnalyzerView: React.FC<EmailAnalyzerViewProps> = ({
   onAnalysisComplete,
   onExportReport,
 }) => {
+  const { currentTranslations, language } = useLanguage();
+  const t = currentTranslations;
   const [subject, setSubject] = useState(EMAIL_PRESETS[0].subject);
   const [sender, setSender] = useState(EMAIL_PRESETS[0].sender);
   const [recipient, setRecipient] = useState(EMAIL_PRESETS[0].recipient);
@@ -161,6 +164,7 @@ export const EmailAnalyzerView: React.FC<EmailAnalyzerViewProps> = ({
           headers,
           body,
           attachments,
+          language,
         }),
       });
       const data: EmailAnalysisResult = await response.json();
@@ -187,7 +191,7 @@ export const EmailAnalyzerView: React.FC<EmailAnalyzerViewProps> = ({
             <span>FORENSIC SMTP & HEADER ENGINE</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold font-display text-white">
-            AI Email Threat Analyzer
+            {t.emailAnalyzer.title}
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             Upload a <code className="text-cyan-300 font-mono">.eml</code> file or inspect headers,

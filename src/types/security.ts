@@ -9,6 +9,8 @@ export type NavPage =
   | "assistant"
   | "settings";
 
+export type SupportedLanguage = "en" | "hi" | "kn";
+
 export type ShieldThreatState = "SAFE" | "WARNING" | "CRITICAL";
 
 export interface UserProfile {
@@ -22,6 +24,7 @@ export interface UserProfile {
   mfaEnabled: boolean;
   voiceTtsEnabled: boolean;
   realtimeAlertsEnabled: boolean;
+  preferredLanguage?: SupportedLanguage;
 }
 
 export interface EmailUrlAnalysis {

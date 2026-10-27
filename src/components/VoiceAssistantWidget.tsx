@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { AssistantMessage, NavPage } from "../types/security";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface VoiceAssistantWidgetProps {
   mode: "page" | "floating";
@@ -34,13 +35,14 @@ export const VoiceAssistantWidget: React.FC<VoiceAssistantWidgetProps> = ({
   onNavigate,
   defaultTtsEnabled = true,
 }) => {
+  const { currentTranslations, language, currentLangOption } = useLanguage();
+  const t = currentTranslations;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
       id: "msg-welcome",
       role: "assistant",
-      content:
-        "Hello! I am your CyberShield AI Security Assistant. Press the microphone to speak a voice command—or type below—to analyze suspicious emails, detect SMS/WhatsApp scams, scan screenshots, or navigate the command center.",
+      content: t.assistant.welcome,
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -63,8 +65,18 @@ export const VoiceAssistantWidget: React.FC<VoiceAssistantWidgetProps> = ({
     try {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.03;
+      utterance.rate = 1.02;
       utterance.pitch = 1.0;
+      utterance.lang = currentLangOption.speechCode;
+      const voices = window.speechSynthesis.getVoices();
+      const matchedVoice = voices.find(
+        (v) =>
+          v.lang.toLowerCase() === currentLangOption.speechCode.toLowerCase() ||
+          v.lang.toLowerCase().startsWith(language)
+      );
+      if (matchedVoice) {
+        utterance.voice = matchedVoice;
+      }
       window.speechSynthesis.speak(utterance);
     } catch {
       // ignore if browser blocks speechSynthesis
@@ -118,7 +130,7 @@ export const VoiceAssistantWidget: React.FC<VoiceAssistantWidgetProps> = ({
       const response = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed }),
+        body: JSON.stringify({ message: trimmed, language }),
       });
       const data = await response.json();
       const executedLabel = executeActionCommand(data.actionCommand);
@@ -168,13 +180,13 @@ export const VoiceAssistantWidget: React.FC<VoiceAssistantWidgetProps> = ({
 
     try {
       const recognition = new SpeechRecognitionAPI();
-      recognition.lang = "en-US";
+      recognition.lang = currentLangOption.speechCode;
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         setIsListening(true);
-        setVoiceNote("Listening... Speak your security command now.");
+        setVoiceNote(`${t.assistant.listening} (${currentLangOption.nativeName})...`);
       };
 
       recognition.onresult = (event: any) => {
@@ -261,7 +273,7 @@ export const VoiceAssistantWidget: React.FC<VoiceAssistantWidgetProps> = ({
           VOICE & ACTION COMMAND SHORTCUTS (CLICK OR SPEAK):
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {VOICE_COMMAND_SUGGESTIONS.map((cmd) => (
+          {t.assistant.suggestions.map((cmd) => (
             <button
               key={cmd}
               type="button"

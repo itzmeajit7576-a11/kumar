@@ -7,7 +7,9 @@ import {
   Lock,
   Database,
 } from "lucide-react";
-import { UserProfile } from "../types/security";
+import { SupportedLanguage, UserProfile } from "../types/security";
+import { useLanguage } from "../i18n/LanguageContext";
+import { Languages, Check } from "lucide-react";
 
 interface SettingsViewProps {
   user: UserProfile;
@@ -15,6 +17,8 @@ interface SettingsViewProps {
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ user, onUpdateUser }) => {
+  const { currentTranslations, language, setLanguage, languages } = useLanguage();
+  const t = currentTranslations;
   const [displayName, setDisplayName] = useState(user.displayName);
   const [organization, setOrganization] = useState(user.organization);
   const [role, setRole] = useState(user.role);
@@ -39,10 +43,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onUpdateUser }
           <span>OPERATOR PREFERENCES & ZERO-TRUST FIRESTORE POSTURE</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold font-display text-white">
-          Command Center Settings
+          {t.settings.title}
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          Manage your Firebase operator identity, voice synthesis preferences, and data isolation
+          {t.settings.subtitle}
           controls.
         </p>
       </div>
@@ -53,6 +57,54 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onUpdateUser }
           <span>Operator profile and security preferences updated in Firestore.</span>
         </div>
       )}
+
+            {/* Language Preference Section */}
+      <div className="rounded-2xl border border-cyan-500/30 bg-slate-900/80 p-6 space-y-4">
+        <div className="flex items-center gap-2 text-sm font-bold font-display text-white border-b border-white/10 pb-3">
+          <Languages className="w-4 h-4 text-cyan-400" />
+          <span>{t.settings.languageHeader}</span>
+        </div>
+        <p className="text-xs text-slate-400">
+          {t.settings.languageSubtext}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+          {languages.map((langOpt) => {
+            const isSelected = language === langOpt.code;
+            return (
+              <button
+                key={langOpt.code}
+                type="button"
+                onClick={() => {
+                  setLanguage(langOpt.code);
+                  onUpdateUser({ preferredLanguage: langOpt.code });
+                }}
+                className={`flex items-center justify-between p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-cyan-500/20 border-cyan-500 text-white shadow-lg shadow-cyan-500/10"
+                    : "bg-slate-950/70 border-white/10 text-slate-300 hover:border-cyan-500/40 hover:text-white"
+                }`}
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{langOpt.flag}</span>
+                    <span className="font-bold text-sm tracking-wide text-white">
+                      {langOpt.nativeName}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-400 font-mono">
+                    {langOpt.name} ({langOpt.code.toUpperCase()})
+                  </div>
+                </div>
+                {isSelected && (
+                  <div className="p-1 rounded-full bg-cyan-500 text-slate-950">
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Operator Identity Form */}
@@ -120,7 +172,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onUpdateUser }
             type="submit"
             className="px-5 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs cursor-pointer"
           >
-            Save Operator Profile
+            {t.settings.saveProfile}
           </button>
         </form>
 

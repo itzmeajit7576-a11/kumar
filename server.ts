@@ -482,7 +482,7 @@ async function startServer() {
   // 1. AI Email Threat Analyzer Endpoint
   app.post("/api/analyze-email", async (req, res) => {
     try {
-      const { subject, sender, recipient, headers, body, attachments } = req.body || {};
+      const { subject, sender, recipient, headers, body, attachments, language } = req.body || {};
       const baseline = heuristicEmailAnalysis({
         subject,
         sender,
@@ -498,7 +498,18 @@ async function startServer() {
       }
 
       try {
+        const langDirective =
+          language === "hi"
+            ? "IMPORTANT: Output the summary, detectionReasons, confirmedEvidence, suspiciousIndicators, uncertainFactors, and recommendedAction entirely in natural, fluent Hindi (हिंदी script)."
+            : language === "kn"
+            ? "IMPORTANT: Output the summary, detectionReasons, confirmedEvidence, suspiciousIndicators, uncertainFactors, and recommendedAction entirely in natural, fluent Kannada (ಕನ್ನಡ script)."
+            : "Output all text in clear, concise English.";
+
         const prompt = `You are a senior cybersecurity forensic analyst. Analyze the following email for Phishing, Scam, Spam, Malicious Links, Impersonation, and Business Email Compromise (BEC).
+
+LANGUAGE REQUIREMENT:
+${langDirective}
+
 IMPORTANT RULES:
 1. Distinguish clearly between Confirmed Evidence (facts directly observable in headers/links/attachments), Suspicious Indicators (linguistic urgency, pretexts), and Uncertain Factors (things that cannot be proven from text alone).
 2. Never claim 100% certainty when evidence is inconclusive.
@@ -600,7 +611,7 @@ ${body || "(empty)"}`;
   // 2. Scam Message Detector Endpoint
   app.post("/api/analyze-message", async (req, res) => {
     try {
-      const { platform, sender, message } = req.body || {};
+      const { platform, sender, message, language } = req.body || {};
       const baseline = heuristicMessageAnalysis({ platform, sender, message });
 
       const ai = getGenAIClient();
@@ -609,9 +620,19 @@ ${body || "(empty)"}`;
       }
 
       try {
+        const langDirective =
+          language === "hi"
+            ? "IMPORTANT: Output whyDetected, detectedCategories, confirmedEvidence, suspiciousIndicators, uncertainFactors, socialEngineeringTechniques, and recommendedAction entirely in fluent Hindi (हिंदी script)."
+            : language === "kn"
+            ? "IMPORTANT: Output whyDetected, detectedCategories, confirmedEvidence, suspiciousIndicators, uncertainFactors, socialEngineeringTechniques, and recommendedAction entirely in fluent Kannada (ಕನ್ನಡ script)."
+            : "Output all text in clear, concise English.";
+
         const prompt = `Analyze this suspicious message from ${platform || "SMS"} (Sender: ${sender || "Unknown"}).
 Check for: OTP scams, Fake bank messages, KYC scams, UPI/payment scams, Fake job offers, Lottery/prize scams, Investment scams, Loan scams, Delivery/package scams, Account-verification scams, Impersonation, Urgent-payment requests, Suspicious links.
 Do not claim certainty when evidence is inconclusive. Separate confirmed evidence from suspicious indicators and uncertain factors.
+
+LANGUAGE REQUIREMENT:
+${langDirective}
 
 Message:
 """
@@ -697,12 +718,19 @@ ${message || ""}
   // 3. Scam Screenshot Scanner (OCR + Multimodal Threat Engine)
   app.post("/api/analyze-screenshot", async (req, res) => {
     try {
-      const { imageBase64, mimeType, fallbackText } = req.body || {};
+      const { imageBase64, mimeType, fallbackText, language } = req.body || {};
 
       const ai = getGenAIClient();
       if (ai && imageBase64) {
         try {
           const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
+          const langDirective =
+            language === "hi"
+              ? "IMPORTANT: Provide explanation, detectedIndicators, confirmedEvidence, uncertainFactors, and recommendedAction in fluent Hindi (हिंदी script)."
+              : language === "kn"
+              ? "IMPORTANT: Provide explanation, detectedIndicators, confirmedEvidence, uncertainFactors, and recommendedAction in fluent Kannada (ಕನ್ನಡ script)."
+              : "Provide all explanations and advice in clear English.";
+
           const response = await ai.models.generateContent({
             model: "gemini-3.8-flash",
             contents: {
@@ -715,6 +743,10 @@ ${message || ""}
                 },
                 {
                   text: `Perform OCR to extract all visible text from this screenshot of a message/email, then analyze it for scam, phishing, or spam indicators.
+
+LANGUAGE DIRECTIVE:
+${langDirective}
+
 Return JSON with:
 - extractedText: exact visible text from the screenshot
 - threatType: one of "SCAM", "PHISHING", "SPAM", "SUSPICIOUS", or "SAFE"
@@ -883,35 +915,64 @@ Return JSON with:
   // 4. Voice & Text AI Security Assistant Endpoint
   app.post("/api/assistant", async (req, res) => {
     try {
-      const { message } = req.body || {};
+      const { message, language } = req.body || {};
       const userText = (message || "").trim();
       const lower = userText.toLowerCase();
 
-      // Detect navigation / action commands first
+      // Detect navigation / action commands (English, Hindi, and Kannada)
       let actionCommand: string | null = null;
-      if (/\b(open|go to|show|launch)\b.*\b(email|analyzer)\b|\banalyze this email\b/i.test(lower)) {
+      if (
+        /\b(open|go to|show|launch)\b.*\b(email|analyzer)\b|\banalyze this email\b/i.test(lower) ||
+        /(ईमेल|ಇಮೇಲ್|email analyzer)/i.test(userText)
+      ) {
         actionCommand = "NAVIGATE_EMAIL_ANALYZER";
-      } else if (/\b(open|go to|show|launch)\b.*\b(scam detector|message detector|sms)\b|\bis this message a scam\b/i.test(lower)) {
+      } else if (
+        /\b(open|go to|show|launch)\b.*\b(scam detector|message detector|sms)\b|\bis this message a scam\b/i.test(lower) ||
+        /(स्कैम|घोटाला|संदेश|ವಂಚನೆ|ಸ್ಕ್ಯಾಮ್|ಮೆಸೇಜ್|scam)/i.test(userText)
+      ) {
         actionCommand = "NAVIGATE_SCAM_DETECTOR";
-      } else if (/\b(open|go to|show|launch)\b.*\b(screenshot|ocr|image scanner)\b|\bscan.*screenshot\b/i.test(lower)) {
+      } else if (
+        /\b(open|go to|show|launch)\b.*\b(screenshot|ocr|image scanner)\b|\bscan.*screenshot\b/i.test(lower) ||
+        /(स्क्रीनशॉट|ओसीआर|ಸ್ಕ್ರೀನ್‌ಶಾಟ್|ಚಿತ್ರ)/i.test(userText)
+      ) {
         actionCommand = "NAVIGATE_SCREENSHOT_SCANNER";
-      } else if (/\b(recent threats|history|past scans|analysis history)\b/i.test(lower)) {
+      } else if (
+        /\b(recent threats|history|past scans|analysis history)\b/i.test(lower) ||
+        /(इतिहास|ಇತಿಹಾಸ|history)/i.test(userText)
+      ) {
         actionCommand = "NAVIGATE_HISTORY";
-      } else if (/\b(report|reports|export pdf)\b/i.test(lower)) {
+      } else if (
+        /\b(report|reports|export pdf)\b/i.test(lower) ||
+        /(रिपोर्ट|ವರದಿ|report)/i.test(userText)
+      ) {
         actionCommand = "NAVIGATE_REPORTS";
-      } else if (/\b(awareness|scam types|safety tips|give me safety tips)\b/i.test(lower)) {
+      } else if (
+        /\b(awareness|scam types|safety tips|give me safety tips)\b/i.test(lower) ||
+        /(जागरूकता|सुरक्षा टिप्स|ಜಾಗೃತಿ|ಸುರಕ್ಷತೆ|safety)/i.test(userText)
+      ) {
         actionCommand = "NAVIGATE_AWARENESS";
-      } else if (/\b(dashboard|command center|home)\b/i.test(lower)) {
+      } else if (
+        /\b(dashboard|command center|home)\b/i.test(lower) ||
+        /(डैशबोर्ड|ಡ್ಯಾಶ್‌ಬೋರ್ಡ್|dashboard)/i.test(userText)
+      ) {
         actionCommand = "NAVIGATE_DASHBOARD";
       }
 
       const ai = getGenAIClient();
       if (ai) {
         try {
+          const langNote =
+            language === "hi"
+              ? "Respond in natural, fluent Hindi (हिंदी script). Keep cybersecurity advice accurate and understandable."
+              : language === "kn"
+              ? "Respond in natural, fluent Kannada (ಕನ್ನಡ script). Keep cybersecurity advice accurate and understandable."
+              : "Respond in natural, fluent English.";
+
           const response = await ai.models.generateContent({
             model: "gemini-3.8-flash",
             contents: `You are the CyberShield AI Security Assistant inside a 3D Cybersecurity Command Center.
 Keep your answer concise (2 to 4 sentences), clear, practical, and easy to understand for normal users.
+${langNote}
 Never fabricate certainty if evidence is incomplete.
 User message: "${userText}"`,
           });
@@ -927,35 +988,75 @@ User message: "${userText}"`,
       }
 
       let reply =
-        "I am your CyberShield Security Assistant. You can ask me to analyze suspicious emails, inspect SMS/WhatsApp messages for fraud, scan screenshots with OCR, review your recent threat history, or explain cybersecurity concepts like phishing, UPI scams, and MFA.";
+        language === "hi"
+          ? "मैं आपका साइबर शील्ड सुरक्षा सहायक हूँ। आप मुझसे संदिग्ध ईमेल का विश्लेषण करने, एसएमएस/व्हाट्सएप धोखाधड़ी जांचने, स्क्रीनशॉट स्कैन करने या साइबर सुरक्षा समझने के लिए कह सकते हैं।"
+          : language === "kn"
+          ? "ನಾನು ನಿಮ್ಮ ಸೈಬರ್ ಶೀಲ್ಡ್ ಭದ್ರತಾ ಸಹಾಯಕ. ಅನುಮಾನಾಸ್ಪದ ಇಮೇಲ್ ವಿಶ್ಲೇಷಿಸಲು, SMS/WhatsApp ವಂಚನೆ ಪತ್ತೆಹಚ್ಚಲು, ಸ್ಕ್ರೀನ್‌ಶಾಟ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಲು ಅಥವಾ ಸೈಬರ್ ರಕ್ಷಣಾ ಸಲಹೆ ಪಡೆಯಲು ನನ್ನನ್ನು ಕೇಳಬಹುದು."
+          : "I am your CyberShield Security Assistant. You can ask me to analyze suspicious emails, inspect SMS/WhatsApp messages for fraud, scan screenshots with OCR, review your recent threat history, or explain cybersecurity concepts like phishing, UPI scams, and MFA.";
 
       if (actionCommand === "NAVIGATE_EMAIL_ANALYZER") {
         reply =
-          "Opening the AI Email Threat Analyzer. Paste the email body, sender address, or upload a .eml file to inspect SPF/DKIM/DMARC headers, suspicious links, and BEC indicators.";
+          language === "hi"
+            ? "एआई ईमेल खतरा विश्लेषक खोला जा रहा है। एसपीएफ, डीकेआईएम, डीएमएआरसी हेडर और संदिग्ध लिंक की जांच के लिए ईमेल पेस्ट करें।"
+            : language === "kn"
+            ? "AI ಇಮೇಲ್ ಬೆದರಿಕೆ ವಿಶ್ಲೇಷಕವನ್ನು ತೆರೆಯಲಾಗುತ್ತಿದೆ. SPF, DKIM ಮತ್ತು ಫಿಶಿಂಗ್ ಲಿಂಕ್‌ಗಳನ್ನು ಪರಿಶೀಲಿಸಲು ಇಮೇಲ್ ಪಠ್ಯವನ್ನು ಅಂಟಿಸಿ."
+            : "Opening the AI Email Threat Analyzer. Paste the email body, sender address, or upload a .eml file to inspect SPF/DKIM/DMARC headers, suspicious links, and BEC indicators.";
       } else if (actionCommand === "NAVIGATE_SCAM_DETECTOR") {
         reply =
-          "Opening the Scam Message Detector. Paste any suspicious SMS, WhatsApp, or Telegram message to evaluate its scam risk score, social engineering tactics, and payment lures.";
+          language === "hi"
+            ? "घोटाला संदेश डिटेक्टर खोला जा रहा है। धोखाधड़ी जोखिम स्कोर और चालें जांचने के लिए संदिग्ध एसएमएस या व्हाट्सएप संदेश पेस्ट करें।"
+            : language === "kn"
+            ? "ವಂಚನೆ ಸಂದೇಶ ಪತ್ತೆಕಾರಕವನ್ನು ತೆರೆಯಲಾಗುತ್ತಿದೆ. ಮೋಸದ ಅಪಾಯದ ಸ್ಕೋರ್ ತಿಳಿಯಲು SMS ಅಥವಾ WhatsApp ಸಂದೇಶವನ್ನು ಅಂಟಿಸಿ."
+            : "Opening the Scam Message Detector. Paste any suspicious SMS, WhatsApp, or Telegram message to evaluate its scam risk score, social engineering tactics, and payment lures.";
       } else if (actionCommand === "NAVIGATE_SCREENSHOT_SCANNER") {
         reply =
-          "Launching the Scam Screenshot Scanner. Upload a JPG or PNG screenshot—or test with one of our built-in samples—to extract text via OCR and highlight deceptive regions.";
+          language === "hi"
+            ? "स्क्रीनशॉट ओसीआर स्कैनर खोला जा रहा है। बैंकिंग स्क्रीनशॉट या संदिग्ध क्यूआर कोड अपलोड करके जांच करें।"
+            : language === "kn"
+            ? "ಸ್ಕ್ರೀನ್‌ಶಾಟ್ OCR ಸ್ಕ್ಯಾನರ್ ಅನ್ನು ಪ್ರಾರಂಭಿಸಲಾಗುತ್ತಿದೆ. ಪಠ್ಯ ಓದಲು ಮತ್ತು ಮೋಸದ ಗುರುತುಗಳನ್ನು ಪತ್ತೆಮಾಡಲು ಸ್ಕ್ರೀನ್‌ಶಾಟ್ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ."
+            : "Launching the Scam Screenshot Scanner. Upload a JPG or PNG screenshot—or test with one of our built-in samples—to extract text via OCR and highlight deceptive regions.";
       } else if (actionCommand === "NAVIGATE_HISTORY") {
         reply =
-          "Navigating to your Threat Analysis History. Here you can filter past Email, Message, and Screenshot inspections and reopen full forensic breakdowns.";
+          language === "hi"
+            ? "आपके खतरा इतिहास पर नेविगेट किया जा रहा है। यहाँ आप पिछले सभी स्कैन और फोरेंसिक परिणाम देख सकते हैं।"
+            : language === "kn"
+            ? "ನಿಮ್ಮ ಬೆದರಿಕೆ ಇತಿಹಾಸಕ್ಕೆ ಕರೆದೊಯ್ಯಲಾಗುತ್ತಿದೆ. ಇಲ್ಲಿ ನೀವು ಹಿಂದಿನ ಎಲ್ಲಾ ಸ್ಕ್ಯಾನ್‌ಗಳನ್ನು ಪರಿಶೀಲಿಸಬಹುದು."
+            : "Navigating to your Threat Analysis History. Here you can filter past Email, Message, and Screenshot inspections and reopen full forensic breakdowns.";
       } else if (actionCommand === "NAVIGATE_REPORTS") {
         reply =
-          "Opening Security Reports. You can export forensic summaries as printable PDFs, download JSON reports, or log a new scam incident report.";
+          language === "hi"
+            ? "सुरक्षा रिपोर्ट खोली जा रही है। यहाँ आप फोरेंसिक रिपोर्ट पीडीएफ में डाउनलोड कर सकते हैं।"
+            : language === "kn"
+            ? "ಭದ್ರತಾ ವರದಿಗಳನ್ನು ತೆರೆಯಲಾಗುತ್ತಿದೆ. ಇಲ್ಲಿ ನೀವು ವಿಧಿವಿಜ್ಞಾನ ವರದಿಗಳನ್ನು PDF ರೂಪದಲ್ಲಿ ರಫ್ತು ಮಾಡಬಹುದು."
+            : "Opening Security Reports. You can export forensic summaries as printable PDFs, download JSON reports, or log a new scam incident report.";
       } else if (actionCommand === "NAVIGATE_AWARENESS") {
         reply =
-          "Opening the Scam Awareness & Cyber Safety Center. Essential rule #1: Never share OTPs or enter your UPI PIN to 'receive' money, and always verify urgent requests through official channels.";
-      } else if (lower.includes("phishing")) {
+          language === "hi"
+            ? "घोटाला जागरूकता केंद्र खोला जा रहा है। नियम #1: पैसे प्राप्त करने के लिए कभी यूपीआई पिन न डालें।"
+            : language === "kn"
+            ? "ವಂಚನೆ ಜಾಗೃತಿ ಕೇಂದ್ರವನ್ನು ತೆರೆಯಲಾಗುತ್ತಿದೆ. ಸುವರ್ಣ ನಿಯಮ: ಹಣ ಸ್ವೀಕರಿಸಲು ಎಂದಿಗೂ UPI PIN ಹಾಕಬೇಡಿ."
+            : "Opening the Scam Awareness & Cyber Safety Center. Essential rule #1: Never share OTPs or enter your UPI PIN to 'receive' money, and always verify urgent requests through official channels.";
+      } else if (lower.includes("phishing") || userText.includes("फिशिंग") || userText.includes("ಫಿಶಿಂಗ್")) {
         reply =
-          "Phishing is a social engineering attack where criminals impersonate trusted organizations—like banks, cloud providers, or couriers—to steal your passwords, OTPs, or payment details. Always inspect the actual sender domain, check for artificial urgency, and never log in through links sent in unexpected messages.";
-      } else if (lower.includes("upi") || lower.includes("otp") || lower.includes("kyc")) {
+          language === "hi"
+            ? "फिशिंग एक साइबर हमला है जिसमें अपराधी बैंक या कंपनियों के नाम पर नकली संदेश या वेबसाइट बनाकर आपका पासवर्ड, ओटीपी और कार्ड नंबर चुराते हैं। अनजान लिंक पर कभी भरोसा न करें।"
+            : language === "kn"
+            ? "ಫಿಶಿಂಗ್ ಎನ್ನುವುದು ಸೈಬರ್ ದಾಳಿಯಾಗಿದ್ದು, ವಂಚಕರು ಬ್ಯಾಂಕ್ ಅಥವಾ ಅಧಿಕೃತ ಸಂಸ್ಥೆಗಳಂತೆ ನಟಿಸಿ ನಕಲಿ ವೆಬ್‌ಸೈಟ್‌ಗಳ ಮೂಲಕ ನಿಮ್ಮ ಪಾಸ್‌ವರ್ಡ್ ಮತ್ತು OTP ಕದಿಯುತ್ತಾರೆ. ಅಪರಿಚಿತ ಲಿಂಕ್‌ಗಳನ್ನು ಕ್ಲಿಕ್ ಮಾಡಬೇಡಿ."
+            : "Phishing is a social engineering attack where criminals impersonate trusted organizations—like banks, cloud providers, or couriers—to steal your passwords, OTPs, or payment details. Always inspect the actual sender domain, check for artificial urgency, and never log in through links sent in unexpected messages.";
+      } else if (lower.includes("upi") || lower.includes("otp") || userText.includes("यूपीआई") || userText.includes("ओटीपी") || userText.includes("ಕೆವೈಸಿ") || userText.includes("ಯುಪಿಐ") || lower.includes("kyc")) {
         reply =
-          "OTP and UPI scams rely on urgency and authority. Remember: you NEVER need to enter a UPI PIN or scan a QR code to receive money, and no legitimate bank or government agency will ask you to share an OTP over a call or click a third-party link to update KYC.";
-      } else if (lower.includes("dangerous") || lower.includes("why")) {
+          language === "hi"
+            ? "याद रखें: यूपीआई पिन केवल पैसे भेजने के लिए होता है, पैसे प्राप्त करने के लिए कभी नहीं। कोई भी बैंक कर्मचारी फोन पर कभी ओटीपी नहीं मांगता।"
+            : language === "kn"
+            ? "ನೆನಪಿಡಿ: UPI PIN ಹಣ ಕಳುಹಿಸಲು ಮಾತ್ರ, ಹಣ ಪಡೆಯಲು ಎಂದಿಗೂ ಅಲ್ಲ. ಬ್ಯಾಂಕ್ ಅಧಿಕಾರಿಗಳು ಎಂದಿಗೂ ಫೋನ್‌ನಲ್ಲಿ ನಿಮ್ಮ OTP ಕೇಳುವುದಿಲ್ಲ."
+            : "OTP and UPI scams rely on urgency and authority. Remember: you NEVER need to enter a UPI PIN or scan a QR code to receive money, and no legitimate bank or government agency will ask you to share an OTP over a call or click a third-party link to update KYC.";
+      } else if (lower.includes("dangerous") || lower.includes("why") || userText.includes("खतरनाक") || userText.includes("ಅಪಾಯ")) {
         reply =
-          "Messages are flagged as dangerous when confirmed technical evidence—such as mismatched Reply-To headers, failed SPF/DKIM authentication, or typosquatted domains—combines with psychological manipulation like sudden account-suspension threats or urgent payment demands.";
+          language === "hi"
+            ? "संदेश तब खतरनाक माने जाते हैं जब उनमें तकनीकी सबूत (जैसे असफल एसपीएफ/डीकेआईएम या फर्जी डोमेन) और मनोवैज्ञानिक दबाव (जैसे 24 घंटे में खाता ब्लॉक होने की धमकी) दोनों मौजूद हों।"
+            : language === "kn"
+            ? "ತಾಂತ್ರಿಕ ಪುರಾವೆಗಳು (ವಿಫಲವಾದ SPF/DKIM ಅಥವಾ ನಕಲಿ ಡೊಮೇನ್) ಮತ್ತು ಮಾನಸಿಕ ತುರ್ತು ಬೆದರಿಕೆಗಳು ಒಟ್ಟಾಗಿ ಕಂಡುಬಂದಾಗ ಸಂದೇಶಗಳನ್ನು ಅಪಾಯಕಾರಿ ಎಂದು ಗುರುತಿಸಲಾಗುತ್ತದೆ."
+            : "Messages are flagged as dangerous when confirmed technical evidence—such as mismatched Reply-To headers, failed SPF/DKIM authentication, or typosquatted domains—combines with psychological manipulation like sudden account-suspension threats or urgent payment demands.";
       }
 
       return res.json({ reply, actionCommand });

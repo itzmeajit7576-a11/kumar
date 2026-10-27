@@ -15,12 +15,15 @@ import {
 import { CyberShield3D } from "./CyberShield3D";
 import { firebaseService } from "../services/firebaseService";
 import { ShieldThreatState, UserProfile } from "../types/security";
+import { useLanguage } from "../context/LanguageContext";
+import { LanguageSelector } from "./LanguageSelector";
 
 interface AuthScreenProps {
   onAuthenticated: (user: UserProfile) => void;
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("itzmeajit7576@gmail.com");
@@ -85,32 +88,33 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
           <button
             type="button"
             onClick={() => setShieldPreviewState("SAFE")}
-            className="hover:text-cyan-400 transition-colors whitespace-nowrap"
+            className="hover:text-cyan-400 transition-colors whitespace-nowrap cursor-pointer"
           >
-            3D Shield Core
+            {t("nav.shieldCore", "3D Shield Core")}
           </button>
           <button
             type="button"
             onClick={() => setShieldPreviewState("WARNING")}
-            className="hover:text-amber-400 transition-colors whitespace-nowrap"
+            className="hover:text-amber-400 transition-colors whitespace-nowrap cursor-pointer"
           >
-            Email & Scam AI
+            {t("nav.emailScamAi", "Email & Scam AI")}
           </button>
           <button
             type="button"
             onClick={() => setShieldPreviewState("CRITICAL")}
-            className="hover:text-red-400 transition-colors whitespace-nowrap"
+            className="hover:text-red-400 transition-colors whitespace-nowrap cursor-pointer"
           >
-            OCR Screenshot Scanner
+            {t("nav.ocrScanner", "OCR Screenshot Scanner")}
           </button>
         </nav>
         <div className="flex items-center gap-3">
+          <LanguageSelector compact />
           <button
             type="button"
             onClick={() => handleGoogleSignIn("itzmeajit7576@gmail.com", "Ajit Kumar")}
-            className="px-4 py-2 text-xs font-medium text-slate-950 bg-cyan-400 hover:bg-cyan-300 rounded-lg transition-colors whitespace-nowrap"
+            className="px-4 py-2 text-xs font-medium text-slate-950 bg-cyan-400 hover:bg-cyan-300 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
           >
-            Quick Operator Access
+            {t("nav.quickOperatorAccess", "Quick Operator Access")}
           </button>
         </div>
       </header>
@@ -205,20 +209,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                   <Shield className="w-5 h-5 text-cyan-400" />
                   <h2 className="text-xl font-bold font-display text-white">
                     {mode === "login"
-                      ? "Operator Authentication"
+                      ? t("auth.operatorAuth", "Operator Authentication")
                       : mode === "register"
-                      ? "Provision Security Account"
-                      : "Credential Recovery"}
+                      ? t("auth.provisionAccount", "Provision Security Account")
+                      : t("auth.credentialRecovery", "Credential Recovery")}
                   </h2>
                 </div>
                 <span className="text-xs font-mono text-cyan-400 tabular-nums">TLS 1.3 · E2E</span>
               </div>
               <p className="text-xs text-slate-400">
                 {mode === "login"
-                  ? "Sign in with Google OAuth or your Firebase operator credentials."
+                  ? t("auth.signInDesc", "Sign in with Google OAuth or your Firebase operator credentials.")
                   : mode === "register"
-                  ? "Create an isolated Firestore workspace for threat history and reports."
-                  : "Enter your registered email to receive a password reset link."}
+                  ? t("auth.createDesc", "Create an isolated Firestore workspace for threat history and reports.")
+                  : t("auth.forgotDesc", "Enter your registered email to receive a password reset link.")}
               </p>
             </div>
 
@@ -231,13 +235,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                   setError(null);
                   setSuccessMsg(null);
                 }}
-                className={`py-2 px-3 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+                className={`py-2 px-3 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
                   mode === "login"
                     ? "bg-cyan-500 text-slate-950 font-semibold"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                Sign In
+                {t("auth.signInTab", "Sign In")}
               </button>
               <button
                 type="button"
@@ -246,13 +250,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                   setError(null);
                   setSuccessMsg(null);
                 }}
-                className={`py-2 px-3 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+                className={`py-2 px-3 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
                   mode === "register"
                     ? "bg-cyan-500 text-slate-950 font-semibold"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                Create Account
+                {t("auth.createTab", "Create Account")}
               </button>
               <button
                 type="button"
@@ -261,13 +265,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                   setError(null);
                   setSuccessMsg(null);
                 }}
-                className={`py-2 px-3 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+                className={`py-2 px-3 text-xs font-medium rounded-md transition-colors whitespace-nowrap cursor-pointer ${
                   mode === "forgot"
                     ? "bg-cyan-500 text-slate-950 font-semibold"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                Forgot Password
+                {t("auth.forgotTab", "Forgot Password")}
               </button>
             </div>
 
@@ -291,7 +295,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
               {mode === "register" && (
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Operator Name / Callsign
+                    {t("auth.callsignLabel", "Operator Name / Callsign")}
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -309,7 +313,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Email Address
+                  {t("auth.emailLabel", "Email Address")}
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -327,7 +331,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
               {mode !== "forgot" && (
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-medium text-slate-300">Password</label>
+                    <label className="text-xs font-medium text-slate-300">
+                      {t("auth.passwordLabel", "Password")}
+                    </label>
                     {mode === "login" && (
                       <button
                         type="button"
@@ -335,9 +341,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                           setMode("forgot");
                           setError(null);
                         }}
-                        className="text-xs text-cyan-400 hover:underline"
+                        className="text-xs text-cyan-400 hover:underline cursor-pointer"
                       >
-                        Forgot password?
+                        {t("auth.forgotLink", "Forgot password?")}
                       </button>
                     )}
                   </div>
@@ -354,7 +360,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
                       aria-label="Toggle password visibility"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -369,21 +375,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                 className="w-full py-2.5 px-4 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-semibold text-sm rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {loading ? (
-                  <span className="font-mono text-xs">VERIFYING CREDENTIALS...</span>
+                  <span className="font-mono text-xs">{t("auth.verifyingBtn", "VERIFYING CREDENTIALS...")}</span>
                 ) : mode === "login" ? (
                   <>
-                    <span>Sign In with Email</span>
+                    <span>{t("auth.signInEmailBtn", "Sign In with Email")}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 ) : mode === "register" ? (
                   <>
-                    <span>Create Security Account</span>
+                    <span>{t("auth.createAccountBtn", "Create Security Account")}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 ) : (
                   <>
                     <KeyRound className="w-4 h-4" />
-                    <span>Send Recovery Token</span>
+                    <span>{t("auth.sendTokenBtn", "Send Recovery Token")}</span>
                   </>
                 )}
               </button>
@@ -393,7 +399,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             <div className="relative flex py-1 items-center">
               <div className="flex-grow border-t border-white/10" />
               <span className="flex-shrink mx-3 text-xs font-mono text-slate-400">
-                OR FEDERATED OAUTH
+                {t("auth.orFederated", "OR FEDERATED OAUTH")}
               </span>
               <div className="flex-grow border-t border-white/10" />
             </div>
@@ -424,19 +430,22 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     d="M12 23c3 0 5.5-1 7.4-2.7l-3.7-2.9c-1 .7-2.3 1.1-3.7 1.1-3.1 0-5.8-2.1-6.7-5L1.6 16.3C3.5 20.2 7.4 23 12 23z"
                   />
                 </svg>
-                <span>Continue with Google</span>
+                <span>{t("auth.continueGoogle", "Continue with Google")}</span>
               </button>
 
               <button
                 type="button"
                 disabled={loading}
                 onClick={() =>
-                  handleGoogleSignIn("soc.commander@cybershield.sec", "Commander Aria Vance (Demo)")
+                  handleGoogleSignIn(
+                    "demo-operator@cybershield.sec",
+                    "SOC Senior Analyst"
+                  )
                 }
-                className="w-full py-2 px-4 bg-cyan-950/40 hover:bg-cyan-900/40 border border-cyan-500/30 rounded-lg text-xs font-mono text-cyan-300 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/40 rounded-lg text-xs font-mono text-cyan-300 transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Cpu className="w-3.5 h-3.5" />
-                <span>Launch Pre-Populated Demo SOC Session</span>
+                <Cpu className="w-4 h-4 text-cyan-400" />
+                <span>{t("auth.launchDemoSession", "Launch Pre-Populated Demo SOC Session")}</span>
               </button>
             </div>
           </div>

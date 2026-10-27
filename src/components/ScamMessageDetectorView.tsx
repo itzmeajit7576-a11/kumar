@@ -11,7 +11,9 @@ import {
   FileText,
   RotateCcw,
 } from "lucide-react";
-import { MessageAnalysisResult } from "../types/security";
+import { MessageAnalysisResult, SupportedLanguage } from "../types/security";
+import { useLanguage } from "../i18n/LanguageContext";
+import { TRANSLATIONS } from "../i18n/translations";
 import { HolographicGauge } from "./HolographicGauge";
 
 interface ScamMessageDetectorViewProps {
@@ -74,10 +76,18 @@ export const ScamMessageDetectorView: React.FC<ScamMessageDetectorViewProps> = (
   onAnalysisComplete,
   onExportReport,
 }) => {
+  const { currentTranslations, language } = useLanguage();
+  const t = currentTranslations;
+  const [presetLangTab, setPresetLangTab] = useState<"ACTIVE" | "kn" | "hi" | "en">("ACTIVE");
   const [platform, setPlatform] = useState("SMS");
-  const [sender, setSender] = useState(MESSAGE_PRESETS[0].sender);
+  const activePresetList =
+    presetLangTab === "ACTIVE"
+      ? t.messagePresets
+      : TRANSLATIONS[presetLangTab as SupportedLanguage]?.messagePresets || t.messagePresets;
+
+  const [sender, setSender] = useState(activePresetList[0]?.sender || "+91 98765 43210");
   const [message, setMessage] = useState(
-    initialPrefillMessage || MESSAGE_PRESETS[0].message
+    initialPrefillMessage || activePresetList[0]?.message || ""
   );
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MessageAnalysisResult | null>(null);
@@ -108,7 +118,7 @@ export const ScamMessageDetectorView: React.FC<ScamMessageDetectorViewProps> = (
       const response = await fetch("/api/analyze-message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform, sender, message }),
+        body: JSON.stringify({ platform, sender, message, language }),
       });
       const data: MessageAnalysisResult = await response.json();
       setResult(data);
@@ -143,7 +153,7 @@ export const ScamMessageDetectorView: React.FC<ScamMessageDetectorViewProps> = (
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {MESSAGE_PRESETS.map((p) => (
+          {activePresetList.map((p) => (
             <button
               key={p.id}
               type="button"
@@ -202,7 +212,7 @@ export const ScamMessageDetectorView: React.FC<ScamMessageDetectorViewProps> = (
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-medium text-slate-300">
-                Suspicious Message Content
+                Suspicious {t.scamDetector.messageLabel}
               </label>
               <span className="text-[11px] font-mono text-slate-400 tabular-nums">
                 {message.length} chars
@@ -403,7 +413,7 @@ export const ScamMessageDetectorView: React.FC<ScamMessageDetectorViewProps> = (
 
               {/* Recommended Action */}
               <div className="p-4 rounded-xl bg-cyan-950/30 border border-cyan-500/30 space-y-3">
-                <div className="text-xs font-mono text-cyan-300">RECOMMENDED ACTION</div>
+                <div className="text-xs font-mono text-cyan-300">{t.scamDetector.recommendedAction.toUpperCase()}</div>
                 <p className="text-sm text-slate-200 leading-relaxed">
                   {result.recommendedAction}
                 </p>

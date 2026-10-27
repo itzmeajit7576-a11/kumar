@@ -1,6 +1,7 @@
 import {
   HistoryRecord,
   SecurityReport,
+  SupportedLanguage,
   UserProfile,
 } from "../types/security";
 
@@ -21,6 +22,7 @@ interface StoredAccount {
   mfaEnabled: boolean;
   voiceTtsEnabled: boolean;
   realtimeAlertsEnabled: boolean;
+  preferredLanguage?: SupportedLanguage;
 }
 
 function getAccountsDB(): Record<string, StoredAccount> {
